@@ -1,0 +1,71 @@
+name: Project checks
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  python:
+    name: ${{ matrix.label }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: Dashboard and API (Linux)
+            os: ubuntu-latest
+            requirements: requirements-dev.txt
+          - label: Full voice runtime (Windows)
+            os: windows-latest
+            requirements: requirements-voice-lock.txt
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+          cache: pip
+          cache-dependency-path: requirements*.txt
+      - name: Install dependencies
+        run: python -m pip install -r ${{ matrix.requirements }}
+      - name: Check dependency compatibility
+        run: python -m pip check
+      - name: Test with temporary databases
+        run: python -m unittest discover -s tests -v
+      - name: Compile Python sources
+        run: python -m compileall -q app scripts tests
+
+  frontend:
+    name: Frontend syntax and repository hygiene
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check JavaScript syntax
+        run: |
+          for file in app/static/*.js; do node --check "$file"; done
+      - name: Check whitespace
+        run: git show --format= --check HEAD
+      - name: Keep local runtime files out of Git
+        shell: python
+        run: |
+          import subprocess
+          from pathlib import PurePosixPath
+          files = subprocess.check_output(['git', 'ls-files', '-z']).decode().split('\0')
+          forbidden = []
+          for name in filter(None, files):
+              path = PurePosixPath(name)
+              private_env = (path.name == '.env' or path.name.startswith('.env.')) and path.name != '.env.example'
+              local_directory = bool(set(path.parts) & {'.venv', 'venv', '.artifacts', 'data', '__pycache__', 'node_modules'})
+              local_file = path.suffix in {'.db', '.sqlite', '.sqlite3', '.log', '.pyc'}
+              if private_env or local_directory or local_file:
+                  forbidden.append(name)
+          if forbidden:
+              raise SystemExit('Remove local runtime files from Git: ' + ', '.join(forbidden))

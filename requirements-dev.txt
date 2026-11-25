@@ -1,0 +1,2 @@
+# The dashboard lock includes httpx for FastAPI TestClient.
+-r requirements-lock.txt

@@ -1,0 +1,1 @@
+"""Aster clinic appointment assistant."""

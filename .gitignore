@@ -1,0 +1,36 @@
+# Local environments and generated Python files
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+coverage.xml
+
+# Credentials (the empty example is safe to publish)
+.env
+.env.*
+!.env.example
+
+# Local appointments, logs, audio checks, and browser profiles
+data/
+*.db
+*.db-*
+*.sqlite
+*.sqlite-*
+*.sqlite3
+*.sqlite3-*
+*.log
+.artifacts/
+
+# Machine-specific editor/tool files
+.idea/
+.vscode/
+.codex/
+.DS_Store
+Thumbs.db
+Desktop.ini
+node_modules/
